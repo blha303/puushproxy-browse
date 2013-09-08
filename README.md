@@ -4,6 +4,7 @@ puushproxy-browse
 Usage
 -----
 * Clone repository on same machine as puushproxy
+* [Install the MongoDB PECL extension](http://php.net/manual/en/mongo.installation.php)
 * Copy `config.sample.php` to `config.php`.
 * Edit `config.php`, add your unique salt from puushproxy.
 * `ln -s path/to/puushproxy/upload/folder upload`
