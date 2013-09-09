@@ -95,7 +95,7 @@ if (isset($_POST['email']) && isset($_POST['pass'])) {
     }
     if (substr($document['name'], 0, 2) == "ss" && file_exists("upload/".$document['name'])) { ?>
       <td>
-        <a href='http://<?php echo $domain; ?>/<?php echo $document['shortname']; ?>'>
+        <a href='http://<?php echo $domain; ?>/<?php echo $document['shortname']; ?>' target="_blank">
           <center><img src='imagethumb.php?s=upload/<?php echo $document['name']; ?>&w=100' class='thumb'></center>
         </a>
       </td>
