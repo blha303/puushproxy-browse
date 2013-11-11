@@ -1,5 +1,6 @@
 <?php
 include('config.php');
+$domains = array("b3@blha303.com.au" => "b3.lc.pe");
 ?>
 <html>
   <head>
@@ -72,11 +73,12 @@ if (isset($_POST['email']) && isset($_POST['pass'])) {
 // I have several puushproxy instances using one database with different urls, so
 // I have to correct URLs manually here. If you can suggest a better solution,
 // please open a ticket! https://github.com/blha303/puushproxy-browse/issues/new
-  if ($theuser['email'] == "jophestus@jophest.us") {
-    $domain = "i.jophest.us";
-  } else {
-    $domain = "with-you.pw";
+  foreach ($domains as $key => $value) {
+    if ($theuser['email'] == $key) {
+      $domain = $value;
+    }
   }
+  if (!isset($domain)) $domain = 'with-you.pw';
 
   $collection = $db->files;
 
@@ -93,9 +95,10 @@ if (isset($_POST['email']) && isset($_POST['pass'])) {
       echo "    </tr>".PHP_EOL."    <tr>".PHP_EOL;
       $x = 0;
     }
-    if (substr($document['name'], 0, 2) == "ss" && file_exists("upload/".$document['name'])) { ?>
+    if (substr($document['name'], 0, 2) == "ss" && file_exists("upload/".$document['name'])) {
+      #$ext = "." . pathinfo($document['name'], PATHINFO_EXTENSION); ?>
       <td>
-        <a href='http://<?php echo $domain; ?>/<?php echo $document['shortname']; ?>' target="_blank">
+        <a href='http://<?php echo $domain; ?>/<?php echo $document['shortname'].$ext; ?>' target="_blank">
           <center><img src='imagethumb.php?s=upload/<?php echo $document['name']; ?>&w=100' class='thumb'></center>
         </a>
       </td>
