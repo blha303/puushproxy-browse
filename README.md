@@ -18,3 +18,7 @@ Thanks
 * [mave](https://github.com/mave), for [puushproxy](https://github.com/mave/puushproxy).
 * [Marco Olivo](http://olivo.net), for [Imagethumb](http://olivo.net/software/imagethumb/)
 * 7boats.com, for [broken.png](http://cdn.7boats.com/wp-content/uploads/2011/07/56744mw8wxhws02.jpg)
+
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/blha303/puushproxy-browse/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+
