@@ -1,12 +1,23 @@
 <?php
 include('config.php');
+if (isset($_POST['clearcookies']) && isset($_COOKIE['apikey'])) {
+  unset($_COOKIE['apikey']);
+  setcookie('apikey', null, -1, '/');
+}
 ?>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
   <head>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js" ></script>
+    <link rel="shortcut icon" href="http://<?php echo $domain; ?>/favicon.ico" />
     <style>
       img.thumb {
         width: auto;
         max-height: 100;
+      }
+      img.icon {
+        width: 100;
+        height: 100;
       }
       body {
         background-color: #000000;
@@ -15,102 +26,199 @@ include('config.php');
       table {
         background-color: #cccccc;
       }
-    </style>
-<?php if (!isset($_POST['email'])) { ?>
-    <script type="text/JavaScript">
-      // http://stackoverflow.com/a/1038781/2746737
-      function GetWidth()
-      {
-          var x = 0;
-          if (self.innerHeight)
-          {
-                  x = self.innerWidth;
-          }
-          else if (document.documentElement && document.documentElement.clientHeight)
-          {
-                  x = document.documentElement.clientWidth;
-          }
-          else if (document.body)
-          {
-                  x = document.body.clientWidth;
-          }
-          return x - 100; // minus 100 to leave space on the side so it doesn't go off the screen.
+      a.text {
+        text-decoration:none;
+        color: black;
+        font-family: consolas, monospace;
+        font-size: 12px;
       }
-    </script>
-<?php } ?>
+    </style>
     <title>puush browse</title>
   </head>
-  <body<?php if (!isset($_POST['email'])) echo " onLoad='document.getElementById(\"width\").value = GetWidth(); document.getElementById(\"email\").focus();'"; ?>>
-    <a href="https://github.com/blha303/puushproxy-browse">
-      <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_white_ffffff.png" alt="Fork me on GitHub">
-    </a>
 <?php
-
-if (isset($_POST['email']) && isset($_POST['pass'])) {
-
-  if (!isset($_POST['width'])) {
-    $width = 800 / 100;
-  } else {
-    $width = (int) ($_POST['width'] / 100);
-  }
-
+if ((isset($_POST['email']) && isset($_POST['password'])) || isset($_GET['k'])) {
   $m = new MongoClient();
 
   $db = $m->puush;
 
   $userdb = $db->users;
 
-  $users = $userdb->find(array("email" => $_POST['email']));
-  foreach ($users as $user) {
-    if (sha1($salt . $_POST['pass']) == $user['password']) {
+  if (isset($_POST['email'])) {
+    $users = $userdb->find(array("email" => $_POST['email']));
+    foreach ($users as $user) {
+      if (sha1($salt . $_POST['password']) == $user['password']) {
+        $theuser = $user;
+      }
+    }
+  } else if (isset($_GET['k'])) {
+    $users = $userdb->find(array("apiKey" => $_GET['k']));
+    foreach ($users as $user) {
       $theuser = $user;
     }
   }
   if (!$theuser) {
     die("Couldn't find a user matching that email/password combination.");
   }
-// I have several puushproxy instances using one database with different urls, so
-// I have to correct URLs manually here. If you can suggest a better solution,
-// please open a ticket! https://github.com/blha303/puushproxy-browse/issues/new
-  if ($theuser['email'] == "jophestus@jophest.us") {
-    $domain = "i.jophest.us";
-  } else {
-    $domain = "with-you.pw";
+  foreach ($domains as $key => $value) {
+    if ($theuser['apiKey'] == $key) {
+      $domain = $value;
+    }
   }
+  if (!isset($domain)) $domain = $defaultpuushurl;
+
+  setcookie("apikey", $theuser['apiKey'], time() + (10 * 365 * 24 * 60 * 60)); // add user's api key to cookies for ten years
 
   $collection = $db->files;
 
-  $cursor = $collection->find(array("owner" => $theuser['_id'])); ?>
+  $cursor = $collection->find(array("owner" => $theuser['_id']));
+ ?>
 
-  <table border=1>
-    <tr>
+<body>
+  <a href="thumbs.php">Thumbnails</a>
+  <form method="POST" action="<?php echo $defaultpuushurl; ?>/api/up" enctype="multipart/form-data" id="upload">
+    <label for="f">Upload:</label><input type="file" name="f" id="f"><input type="button" value="Submit" onclick="uploadsubm()">
+    <input type="hidden" name="z" value="poop"><input type="hidden" name="k" value="<?php echo $theuser['apiKey']; ?>">
+    <span id="uploadout">Make sure you allow popups.</span>
+  </form>
+  <ul>
 <?php
 
   $x = 0;
   $newline = true;
-  foreach($cursor as $document) {
-    if ($x == $width) {
-      echo "    </tr>".PHP_EOL."    <tr>".PHP_EOL;
-      $x = 0;
-    }
-    if (substr($document['name'], 0, 2) == "ss" && file_exists("upload/".$document['name'])) { ?>
-      <td>
-        <a href='http://<?php echo $domain; ?>/<?php echo $document['shortname']; ?>' target="_blank">
-          <center><img src='imagethumb.php?s=upload/<?php echo $document['name']; ?>&w=100' class='thumb'></center>
+  foreach(array_reverse(iterator_to_array($cursor)) as $document) {
+    $ext = pathinfo($document['name'], PATHINFO_EXTENSION);
+    if (file_exists("upload/".$document['name'])) { ?>
+      <li>
+        <a href='<?php echo $domain; ?>/<?php echo $document['shortname'].".".$ext; ?>' target="_blank" class="fancybox">
+          <?php echo $document['name']; ?>
         </a>
-      </td>
+      </li>
 <?php
-      $x += 1;
     }
-    echo $out;
-  }
-} else {
-?><form method="POST">
+  } ?>
+  </ul>
+  <script type="text/javascript">
+// http://hayageek.com/jquery-ajax-form-submit/
+function getDoc(frame) {
+     var doc = null;
+ 
+     // IE8 cascading access check
+     try {
+         if (frame.contentWindow) {
+             doc = frame.contentWindow.document;
+         }
+     } catch(err) {
+     }
+ 
+     if (doc) { // successful getting content
+         return doc;
+     }
+ 
+     try { // simply checking may throw in ie8 under ssl or mismatched protocol
+         doc = frame.contentDocument ? frame.contentDocument : frame.document;
+     } catch(err) {
+         // last attempt
+         doc = frame.document;
+     }
+     return doc;
+ }
+function uploadsubm() {
+$("#upload").submit(function(e) {
+    var formObj = $(this);
+    var formURL = formObj.attr("action");
+
+    if(window.FormData !== undefined) {
+        var formData = new FormData(this);
+        $.ajax({
+            url: formURL,
+            type: 'POST',
+            data:  formData,
+            mimeType:"multipart/form-data",
+            contentType: false,
+            cache: false,
+            processData:false,
+            success: function(data, textStatus, jqXHR) {
+		$("#uploadout").text(data.split(",")[1]);
+                window.open(data.split(",")[1]);
+            },
+            error: function(jqXHR, textStatus, errorThrown) {
+                $("#uploadout").text("Upload failed");
+            }
+       });
+        e.preventDefault();
+        e.unbind();
+   }
+   else {
+        var  iframeId = 'unique' + (new Date().getTime());
+        var iframe = $('<iframe src="javascript:false;" name="'+iframeId+'" />');
+        iframe.hide();
+        formObj.attr('target',iframeId);
+        iframe.appendTo('body');
+        iframe.load(function(e)
+        {
+            var doc = getDoc(iframe[0]);
+            var docRoot = doc.body ? doc.body : doc.documentElement;
+            var data = docRoot.innerHTML;
+            $("#uploadout").text(data.split(",")[1]);
+            window.open(data.split(",")[1]);
+        });
+    }
+});
+$("#upload").submit();
+}
+
+$("#register").on("click", function(e){
+  $("#login").attr('action', '<?php echo $defaultpuushurl; ?>/register');
+  $("#login").submit();
+}
+  </script>
+  <script type="text/javascript" src="/fancybox/lib/jquery.mousewheel-3.0.6.pack.js"></script>
+  <link rel="stylesheet" href="/fancybox/source/jquery.fancybox.css?v=2.1.5" type="text/css" media="screen" />
+  <script type="text/javascript" src="/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+  <link rel="stylesheet" href="/fancybox/source/helpers/jquery.fancybox-buttons.css?v=1.0.5" type="text/css" media="screen" />
+  <script type="text/javascript" src="/fancybox/source/helpers/jquery.fancybox-buttons.js?v=1.0.5"></script>
+  <script type="text/javascript" src="/fancybox/source/helpers/jquery.fancybox-media.js?v=1.0.6"></script>
+
+  <link rel="stylesheet" href="/fancybox/source/helpers/jquery.fancybox-thumbs.css?v=1.0.7" type="text/css" media="screen" />
+  <script type="text/javascript" src="/fancybox/source/helpers/jquery.fancybox-thumbs.js?v=1.0.7"></script>
+  <script type="text/javascript">
+	$(document).ready(function() {
+		$(".fancybox").fancybox();
+	});
+  </script>
+<?php } else {
+?>
+<body onLoad='document.getElementById("email").focus();'>
+<a href="thumbs.php">Thumbnails</a>
+<form id="login" method="POST">
+  <label for="email">Email</label>
   <input type='text' name='email' id='email'><br>
-  <input type='password' name='pass' id='pass'><br>
-  <input type='hidden' id='width' name='width' value=''>
+  <label for="password">Password</label>
+  <input type='password' name='password' id='password'><br>
+  <input type='submit' value="Login">
+  <input type='button' id="register" value="Register">
+</form>
+or
+<form method="GET">
+  <label for="apikey">API key</label>
+  <input type='text' name='k' id="apikey" width=64<?php if (isset($_COOKIE['apikey'])) { echo " value='" . $_COOKIE['apikey'] . "'"; } ?>><br>
   <input type='submit'>
-</form><?php
+</form>
+<br>
+Upload:
+<form method="POST" action="<?php echo $defaultpuushurl; ?>/api/up" enctype="multipart/form-data">
+<input type="hidden" name="z" value="poop">
+<input type="text" name="k" placeholder="API key"<?php if (isset($_COOKIE['apikey'])) { echo " value='" . $_COOKIE['apikey'] . "'"; } ?>><br>
+<input type="file" name="f" id="f"><br>
+<input type="submit">
+</form>
+Clear cookies:
+<form method="POST">
+<input type="submit" name="clearcookies" value="Clear API key">
+</form>
+Source: <a href="https://github.com/blha303/puushproxy-browse">github.com/blha303/puushproxy-browse</a><br>
+Icons: <a href="https://github.com/teambox/Free-file-icons">Teambox Free icon set</a><?php
 } ?>
   </body>
 </html>

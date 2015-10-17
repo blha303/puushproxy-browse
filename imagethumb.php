@@ -47,6 +47,9 @@ $ALLOW_HTTP_IMAGES = false;	/* allow requests of http:// or ftp:// resources? Ma
 /* some settings */
 ignore_user_abort();
 set_time_limit( 0 );
+define("FATAL", "FATAL");
+define("ERROR", "ERROR");
+define("WARNING", "WARNING");
 error_reporting( FATAL | ERROR | WARNING );
 
 /* security check */
