@@ -3,6 +3,7 @@ puushproxy-browse
 
 Usage
 -----
+* Set up [puushproxy](https://github.com/blha303/puushproxy)
 * Clone repository on same machine as puushproxy
 * [Install the MongoDB PECL extension](http://php.net/manual/en/mongo.installation.php)
 * Copy `config.sample.php` to `config.php`.
@@ -15,6 +16,6 @@ Usage
 Thanks
 ------
 
-* [mave](https://github.com/mave), for [puushproxy](https://github.com/mave/puushproxy).
+* [jannispl](https://github.com/mave), for puushproxy
 * [Marco Olivo](http://olivo.net), for [Imagethumb](http://olivo.net/software/imagethumb/)
 * 7boats.com, for [broken.png](http://cdn.7boats.com/wp-content/uploads/2011/07/56744mw8wxhws02.jpg)
